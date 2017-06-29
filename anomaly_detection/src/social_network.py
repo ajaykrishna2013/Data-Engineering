@@ -49,12 +49,13 @@ class SocialNetwork():
 			flagged_purchase['event_type'] = 'purchase'
 			flagged_purchase['timestamp'] = purchase[1]
 			flagged_purchase['id'] = user_id
-			flagged_purchase['amount'] = str(purchase[0])
-			flagged_purchase['mean'] = str(round(mean, 2))
-			flagged_purchase['sd'] = str(round(std, 2))
+			flagged_purchase['amount'] = "{0:.2f}".format(purchase[0])
+			flagged_purchase['mean'] = "{0:.2f}".format(mean)
+			flagged_purchase['sd'] = "{0:.2f}".format(std)
 
 			json_string = json.dumps(flagged_purchase)
-			with open('.' + self.output_log, 'a+') as f:
+			#with open('.' + self.output_log, 'a+') as f:
+			with open(self.output_log, 'a+') as f:
 				f.write(json_string)
 
 

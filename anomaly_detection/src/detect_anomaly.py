@@ -6,7 +6,8 @@ from users import User
 
 
 def process_batch_input(batch_input_file, output_log):
-	with open('.' + batch_input_file, 'r') as f:
+	#with open('.' + batch_input_file, 'r') as f:
+	with open(batch_input_file, 'r') as f:
 		for idx, line in enumerate(f.readlines()):
 			line.rstrip()
 			json_line = json.loads(line)
@@ -44,7 +45,8 @@ def process_batch_input(batch_input_file, output_log):
 
 
 def process_event_input(social_network, event_input_file):
-	with open('.' + event_input_file, 'r') as f:
+	#with open('.' + event_input_file, 'r') as f:
+	with open(event_input_file, 'r') as f:
 		for idx, line in enumerate(f.readlines()):
 			line.rstrip()
 			json_line = json.loads(line)
@@ -70,7 +72,7 @@ def process_event_input(social_network, event_input_file):
 if __name__ =='__main__':
 	batch_input, event_input, output_log = sys.argv[1:]
 	print 'batch input', batch_input
-	print 'envent input', event_input
+	print 'event input', event_input
 	print 'output_log', output_log
 
 	num_tracked = 0
