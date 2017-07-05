@@ -16,6 +16,18 @@ class Search():
 		self.bfs(G, source)
 
 	def bfs(self, G, source_vertex):
+		"""
+		Do a bfs using the distTo (distance to) dictionary. Source vertex starts with
+		distTo = 0. Every connected node will add 1 to its distance from
+		source vertex. BFS continues only if distTo from parent to child node
+		is less than equal to the node being processed.
+		Args:
+		    G: is the network represented as a dictionary
+		    source_vertex: to find all nodes connected up to search degree
+
+		Returns:
+
+		"""
 		queue = deque()
 
 		self.distTo[source_vertex] = 0
@@ -35,6 +47,13 @@ class Search():
 					queue.append(friend)
 
 	def get_friends_within_degree(self):
+		"""
+		finds all friends with in search degree by looking at the
+		distance each node is from the source
+
+		Returns: a list of friends within degree
+
+		"""
 		valid_friends_list = []
 		for friend in self.distTo.keys():
 			if self.distTo[friend] <= self.search_degree and friend != self.source_vertex:

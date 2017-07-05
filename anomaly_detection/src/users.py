@@ -3,7 +3,7 @@ import logging
 
 class User():
 	def __init__(self, id, T=2):
-		self.logger = logging.getLogger(__name__)
+		#self.logger = logging.getLogger(__name__)
 		#self.logger.setLevel(logging.DEBUG)
 		# fh = logging.FileHandler('User.log')
 		# fh.setLevel(logging.DEBUG)
@@ -12,7 +12,7 @@ class User():
 		self.tracked = T
 		self.friends = deque()
 		self.purchases = deque()
-		self.logger.info('Creating user %s', self.user_id)
+		#self.logger.info('Creating user %s', self.user_id)
 
 	def add_purchase(self, p):
 		"""
@@ -27,7 +27,7 @@ class User():
 		"""
 		if len(self.purchases) == self.tracked:
 			drop = self.purchases.popleft()
-		self.logger.info('Adding purchase %s for user %s', p, self.user_id)
+		#self.logger.info('Adding purchase %s for user %s', p, self.user_id)
 		self.purchases.append(p)
 
 	def get_num_tracked(self):
@@ -39,8 +39,9 @@ class User():
 		Returns:
 
 		"""
-		ordered_purchases = sorted(self.purchases, key=lambda x: x[1])
-		return ordered_purchases
+		# ordered_purchases = sorted(self.purchases, key=lambda x: x[1])
+		# return ordered_purchases
+		return self.purchases
 
 	def get_userid(self):
 		return self.user_id
@@ -54,7 +55,7 @@ class User():
 		Returns:
 
 		"""
-		self.logger.info('Adding friend %s for user %s', friend_id, self.user_id)
+		#self.logger.info('Adding friend %s for user %s', friend_id, self.user_id)
 		self.friends.append(friend_id)
 
 	def remove_friend(self, friend_id):
@@ -67,7 +68,7 @@ class User():
 			nothing
 		"""
 		friend_index = list(self.friends).index(friend_id)
-		self.logger.info('Remove friend %s for user %s', self.friends[friend_index], self.user_id)
+		#self.logger.info('Remove friend %s for user %s', self.friends[friend_index], self.user_id)
 		del self.friends[friend_index]
 
 	def get_friends(self):

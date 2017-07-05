@@ -1,0 +1,53 @@
+D=2, T=50
+Time to process batch log 5.89848279953
+Time to process stream log 49.1676981449
+with heapify
+Time to process batch log 6.30672097206
+Time to process stream log 18.8261089325
+
+
+D=2 T=100
+Time to process batch log 6.3452630043
+Time to process stream log 50.4843680859
+with heapify
+Time to process batch log 6.24788093567
+Time to process stream log 18.7565369606
+
+D=2 T=200
+with heapify
+Time to process batch log 6.31263709068
+Time to process stream log 20.8976578712
+
+D=2 T=300
+Time to process batch log 5.96173000336
+Time to process stream log 52.0069200993
+with heapify
+Time to process batch log 6.46475791931
+Time to process stream log 21.7606728077
+
+D=2 T=500
+Time to process batch log 5.81459379196
+Time to process stream log 51.8344240189
+with heapify
+Time to process batch log 6.31304812431
+Time to process stream log 20.4082770348
+
+D=2 T=1000
+with heapify
+Time to process batch log 6.24379301071
+Time to process stream log 19.0315301418
+
+D=3 T=10
+Time to process batch log 5.76353096962
+Time to process stream log 742.759560108
+
+D=3 T=50
+Time to process batch log 5.83691501617
+Time to process stream log 747.26403904
+with heapify
+Time to process batch log 6.32886695862
+Time to process stream log 162.210399866
+
+D=3 T=100
+Time to process batch log 6.75161910057
+Time to process stream log 158.711355925
