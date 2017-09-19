@@ -16,16 +16,19 @@ class SmartHomeProducer():
 	def transmit_home_data(self):
 		with open('HomeA-meter2_2016.csv', 'rb') as f:
 			reader = csv.DictReader(f)
+			count = 0
 			for row in reader:
 				eventTime = self.startTime + self.step
 				eventTimestamp = eventTime.strftime("%s")
 				row['Date & Time'] = eventTimestamp
 				row['LAT'] = 37.216953
 				row['LONG'] = -121.926555
-				self.proc.produce('first_topic', json.dumps(row))
-				print raw_input('?')
+				self.proc.produce('SmartHome1', json.dumps(row))
 				self.startTime = eventTime
-	
+				count += 1
+				if count == 10000:
+					break		
+		
 
 
 if __name__ == '__main__':
