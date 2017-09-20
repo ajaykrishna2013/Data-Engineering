@@ -30,9 +30,11 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-
+import java.util.Random;
 //Cassandra Stuff
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.connectors.cassandra.CassandraSink;
 import org.apache.flink.streaming.connectors.cassandra.ClusterBuilder;
@@ -52,7 +54,8 @@ import java.util.Map;
 
 
 public class StreamingJob {
-	private static final String INSERT = "INSERT INTO smart_home.smarthome_event_usage (event_time, usage) VALUES (?, ?)";
+	private static final String INSERT_SMART_HOME_USAGE_GENERATION = "INSERT INTO cep_analytics.smarthome_usage_gen_table (home_id, generation, usage, event_time) VALUES (?, ?, ?, ?)";
+	private static final String INSERT_CEP = "INSERT INTO cep_analytics.smarthome_cep_table (home_id, event_time, event_description, event_severity, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)";
 	private static final ArrayList<Tuple2<String, Integer>> collection = new ArrayList<>(20);
 
 	static {
@@ -71,35 +74,76 @@ public class StreamingJob {
 		properties.setProperty("zookeeper.connect", "52.24.35.74:2181");
 		properties.setProperty("group.id", "flink_SmartHome_Consumer");
 		
-		DataStream<String> stream = env.addSource(new FlinkKafkaConsumer09<>( "SmartHome_A", new SimpleStringSchema(), properties) );
-		
-		//writeElastic(stream);
-		DataStream<Tuple2<Date,Float>> time_usage_map = stream.flatMap(new FlatMapFunction<String, Tuple2<Date, Float>>() {
+		DataStream<String> stream = env.addSource(new FlinkKafkaConsumer09<>( "SmartHomeMeterTopic", new SimpleStringSchema(), properties) );
+
+		DataStream<Tuple6<Integer,Date,String,String,Float,Float>> cep_map = stream.flatMap(new FlatMapFunction<String, Tuple6<Integer,Date,String,String,Float,Float>>() {
             		@Override
-            		public void flatMap(String s, Collector<Tuple2<Date, Float>> collector) throws Exception {
+            		public void flatMap(String s, Collector<Tuple6<Integer,Date,String,String,Float,Float>> collector) throws Exception {
             		    Gson gson = new Gson();
             		    Map<String, String> map = new HashMap<String, String>();
             		    Map<String, String> myMap = gson.fromJson(s, map.getClass());
 
+			    String[] event_class = {"Medium", "Low", "High", "Non-event"};
+			    Random random = new Random();
+			    int index = random.nextInt(event_class.length);
+
             		    DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
             		    Date date = format.parse(myMap.get("time"));
 
-            		    Float usage = Float.parseFloat(myMap.get("usage"));
-            		    Tuple2<Date, Float> t_u_map = new Tuple2<>();
-            		    t_u_map.setFields(date, usage);
+            		    Integer home_id = Integer.parseInt(myMap.get("home_id"));
+            		    Float latitude = Float.parseFloat(myMap.get("LAT"));
+            		    Float longitude = Float.parseFloat(myMap.get("LONG"));
+			    String event_descr = "complex event";
+			    String event_severity = event_class[index];
+            		    
+			    Tuple6<Integer,Date,String,String,Float,Float> t_u_map = new Tuple6<>();
+            		    t_u_map.setFields(home_id, date, event_descr, event_severity, latitude, longitude);
 
             		    collector.collect(t_u_map);
             		}
         	});
 
-        	CassandraSink.addSink(time_usage_map)
-        	        .setQuery(INSERT)
+		CassandraSink.addSink(cep_map)
+        	        .setQuery(INSERT_CEP)
         	        .setClusterBuilder(new ClusterBuilder() {
         	            @Override
         	            protected Cluster buildCluster(Builder builder) {
         	                return builder.addContactPoint("10.0.0.10").build();
         	            }
         	        }).build();
+
+
+
+		
+		//DataStream<Tuple4<Integer,Float,Float,Date>> time_usage_map = stream.flatMap(new FlatMapFunction<String, Tuple4<Integer,Float,Float,Date>>() {
+            	//	@Override
+            	//	public void flatMap(String s, Collector<Tuple4<Integer,Float,Float,Date>> collector) throws Exception {
+            	//	    Gson gson = new Gson();
+            	//	    Map<String, String> map = new HashMap<String, String>();
+            	//	    Map<String, String> myMap = gson.fromJson(s, map.getClass());
+
+            	//	    DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            	//	    Date date = format.parse(myMap.get("time"));
+
+            	//	    Integer home_id = Integer.parseInt(myMap.get("home_id"));
+            	//	    Float usage = Float.parseFloat(myMap.get("usage"));
+            	//	    Float generation = Float.parseFloat(myMap.get("generation"));
+            	//	    
+		//	    Tuple4<Integer,Float,Float,Date> t_u_map = new Tuple4<>();
+            	//	    t_u_map.setFields(home_id, usage, generation, date);
+
+            	//	    collector.collect(t_u_map);
+            	//	}
+        	//});
+
+        	// CassandraSink.addSink(time_usage_map)
+        	//         .setQuery(INSERT_SMART_HOME_USAGE_GENERATION)
+        	//         .setClusterBuilder(new ClusterBuilder() {
+        	//             @Override
+        	//             protected Cluster buildCluster(Builder builder) {
+        	//                 return builder.addContactPoint("10.0.0.10").build();
+        	//             }
+        	//         }).build();
 
 
 //        SingleOutputStreamOperator<String> time_and_usage = stream.map(new MapFunction<String, String>() {
