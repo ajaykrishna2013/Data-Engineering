@@ -4,6 +4,7 @@ import csv
 import os
 from datetime import datetime, timedelta
 import json
+import time
 
 class SmartHomeProducer():
 	def __init__(self):
@@ -14,23 +15,27 @@ class SmartHomeProducer():
 		self.proc = Producer({'bootstrap.servers':'54.69.161.38:9092'})
 		
 	def transmit_home_data(self):
-		with open('HomeA-meter2_2016.csv', 'rb') as f:
+		with open('HomeAMeter.csv', 'rb') as f:
 			reader = csv.DictReader(f)
 			count = 0
 			for row in reader:
+				#print self.startTime
 				eventTime = self.startTime + self.step
-				eventTimestamp = eventTime.strftime("%s")
-				row['Date & Time'] = eventTimestamp
-				row['LAT'] = 37.216953
-				row['LONG'] = -121.926555
-				self.proc.produce('SmartHome1', json.dumps(row))
+				eventTimestamp = str(eventTime)
+				row['time'] = eventTimestamp
+				#print row['time'], row['usage']
+				self.proc.produce('SmartHomeMeterTopic', json.dumps(row))
 				self.startTime = eventTime
 				count += 1
-				if count == 10000:
+				if count == 50000:
 					break		
-		
+		return count
 
 
 if __name__ == '__main__':
 	home1 = SmartHomeProducer()
-	home1.transmit_home_data()
+	startTime = time.time()
+	count = home1.transmit_home_data()
+	time_taken = time.time() - startTime
+	print 'sent %d events in %f' % (count, time_taken) 
+	
