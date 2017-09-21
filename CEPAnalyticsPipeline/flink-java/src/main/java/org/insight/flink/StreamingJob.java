@@ -22,49 +22,29 @@ package org.insight.flink;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternSelectFunction;
-import org.apache.flink.cep.PatternFlatSelectFunction;
-import org.apache.flink.cep.PatternFlatTimeoutFunction;
 import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.types.Either;
 
 import java.util.Properties;
-import com.google.gson.Gson;
-import org.apache.flink.api.common.functions.*;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
+
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.datastream.DataStream;
 //import org.apache.flink.streaming.api.functions.sink;
-import org.apache.flink.streaming.api.datastream.DataStreamSink;
-import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
-import org.apache.flink.streaming.api.functions.IngestionTimeExtractor;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer09;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 
 import java.util.Date;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Random;
 //Cassandra Stuff
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.connectors.cassandra.CassandraSink;
 import org.apache.flink.streaming.connectors.cassandra.ClusterBuilder;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Cluster.Builder;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.util.Collector;
 
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,65 +52,6 @@ import java.util.Map;
 public class StreamingJob {
 	private static final String INSERT_SMART_HOME_USAGE_GENERATION = "INSERT INTO cep_analytics.smarthome_usage_gen_table (home_id, generation, usage, event_time) VALUES (?, ?, ?, ?)";
 	private static final String INSERT_CEP = "INSERT INTO cep_analytics.smarthome_cep_table (home_id, event_time, event_description, event_severity, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)";
-
-	public class CepTuple extends Tuple8<Integer,Date,String,String,Float,Float,Float,Float> {
-		public CepTuple (Integer _0, Date _1, String _2, String _3, Float _4, Float _5, Float _6, Float _7) {
-			super(_0, _1, _2, _3, _4, _5, _6, _7);
-		}
-	}
-
-
-	public static class ConvertToGson implements FlatMapFunction<String, Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> {
-
-		@Override
-		public void flatMap(String s, Collector<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> collector) throws Exception {
-			Gson gson = new Gson();
-			Map<String, String> map = new HashMap<String, String>();
-			Map<String, String> myMap = gson.fromJson(s, map.getClass());
-
-			String[] event_class = {"Medium", "Low", "High", "Non-event"};
-			Random random = new Random();
-			int index = random.nextInt(event_class.length);
-
-			DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-			Date date = format.parse(myMap.get("time"));
-
-			Integer home_id = Integer.parseInt(myMap.get("home_id"));
-			Float latitude = Float.parseFloat(myMap.get("LAT"));
-			Float longitude = Float.parseFloat(myMap.get("LONG"));
-			Float usage = Float.parseFloat(myMap.get("usage"));
-			Float generation = Float.parseFloat(myMap.get("generation"));
-			String event_descr = "complex event";
-			String event_severity = event_class[index];
-
-			Tuple8<Integer,Date,String,String,Float,Float,Float,Float> t_u_map = new Tuple8<>();
-			t_u_map.setFields(home_id, date, event_descr, event_severity, latitude, longitude, usage, generation);
-
-
-			collector.collect(t_u_map);
-		}
-	}
-
-	public static class CaptureEvents implements 
-		PatternSelectFunction<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, Tuple6<Integer, Date, String, String, Float, Float>> {
-		@Override
-		public Tuple6<Integer, Date, String, String, Float, Float> select(Map<String, List<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>> pattern) 
-			throws Exception {
-
-			Tuple8<Integer, Date, String, String, Float, Float, Float, Float>	startEvent = pattern.get("start").get(0);
-			Tuple8<Integer, Date, String, String, Float, Float, Float, Float>	endEvent = pattern.get("end").get(0);
-			Tuple6<Integer, Date, String, String, Float, Float> outEvent = new Tuple6<>();
-
-			outEvent.setField(endEvent.getField(0), 0);
-			outEvent.setField(endEvent.getField(1), 1);
-			outEvent.setField(endEvent.getField(2), 2);
-			outEvent.setField(endEvent.getField(3), 3);
-			outEvent.setField(endEvent.getField(4), 4);
-			outEvent.setField(endEvent.getField(5), 5);
-
-			return outEvent;
-		}
-	}
 
 
 	public static class OverLowThreshold extends SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> {
@@ -205,7 +126,7 @@ public class StreamingJob {
 
 		
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMap = stream
-			.flatMap(new ConvertToGson());		
+			.flatMap(new UnpackEventStream());
 
 
 		//DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMap = stream
@@ -288,7 +209,7 @@ public class StreamingJob {
 		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId, cep1);
 
 
-		DataStream<Tuple6<Integer, Date, String, String, Float, Float>> alerts = patternStream.select(new CaptureEvents());
+		DataStream<Tuple6<Integer, Date, String, String, Float, Float>> alerts = patternStream.select(new PackageCapturedEvents());
 
 		//alerts.print();
 
