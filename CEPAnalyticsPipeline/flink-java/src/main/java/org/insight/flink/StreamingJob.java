@@ -73,6 +73,67 @@ public class StreamingJob {
 	private static final String INSERT_SMART_HOME_USAGE_GENERATION = "INSERT INTO cep_analytics.smarthome_usage_gen_table (home_id, generation, usage, event_time) VALUES (?, ?, ?, ?)";
 	private static final String INSERT_CEP = "INSERT INTO cep_analytics.smarthome_cep_table (home_id, event_time, event_description, event_severity, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)";
 
+	public class CepTuple extends Tuple8<Integer,Date,String,String,Float,Float,Float,Float> {
+		public CepTuple (Integer _0, Date _1, String _2, String _3, Float _4, Float _5, Float _6, Float _7) {
+			super(_0, _1, _2, _3, _4, _5, _6, _7);
+		}
+	}
+
+
+	public static class ConvertToGson implements FlatMapFunction<String, Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> {
+
+		@Override
+		public void flatMap(String s, Collector<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> collector) throws Exception {
+			Gson gson = new Gson();
+			Map<String, String> map = new HashMap<String, String>();
+			Map<String, String> myMap = gson.fromJson(s, map.getClass());
+
+			String[] event_class = {"Medium", "Low", "High", "Non-event"};
+			Random random = new Random();
+			int index = random.nextInt(event_class.length);
+
+			DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+			Date date = format.parse(myMap.get("time"));
+
+			Integer home_id = Integer.parseInt(myMap.get("home_id"));
+			Float latitude = Float.parseFloat(myMap.get("LAT"));
+			Float longitude = Float.parseFloat(myMap.get("LONG"));
+			Float usage = Float.parseFloat(myMap.get("usage"));
+			Float generation = Float.parseFloat(myMap.get("generation"));
+			String event_descr = "complex event";
+			String event_severity = event_class[index];
+
+			Tuple8<Integer,Date,String,String,Float,Float,Float,Float> t_u_map = new Tuple8<>();
+			t_u_map.setFields(home_id, date, event_descr, event_severity, latitude, longitude, usage, generation);
+
+
+			collector.collect(t_u_map);
+		}
+	}
+
+	public static class CaptureEvents implements 
+		PatternSelectFunction<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, Tuple6<Integer, Date, String, String, Float, Float>> {
+		@Override
+		public Tuple6<Integer, Date, String, String, Float, Float> select(Map<String, List<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>> pattern) 
+			throws Exception {
+
+			Tuple8<Integer, Date, String, String, Float, Float, Float, Float>	startEvent = pattern.get("start").get(0);
+			Tuple8<Integer, Date, String, String, Float, Float, Float, Float>	endEvent = pattern.get("end").get(0);
+			Tuple6<Integer, Date, String, String, Float, Float> outEvent = new Tuple6<>();
+
+			outEvent.setField(endEvent.getField(0), 0);
+			outEvent.setField(endEvent.getField(1), 1);
+			outEvent.setField(endEvent.getField(2), 2);
+			outEvent.setField(endEvent.getField(3), 3);
+			outEvent.setField(endEvent.getField(4), 4);
+			outEvent.setField(endEvent.getField(5), 5);
+
+			return outEvent;
+		}
+	}
+
+
+
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -119,38 +180,42 @@ public class StreamingJob {
 //			}
 //		});
 
-
+		
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMap = stream
-			.flatMap(new FlatMapFunction<String, Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>() {
-			
-			@Override
-			public void flatMap(String s, Collector<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> collector) throws Exception {
-				Gson gson = new Gson();
-				Map<String, String> map = new HashMap<String, String>();
-				Map<String, String> myMap = gson.fromJson(s, map.getClass());
+			.flatMap(new ConvertToGson());		
 
-			    	String[] event_class = {"Medium", "Low", "High", "Non-event"};
-			    	Random random = new Random();
-			    	int index = random.nextInt(event_class.length);
 
-				DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-				Date date = format.parse(myMap.get("time"));
+		//DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMap = stream
+		//	.flatMap(new FlatMapFunction<String, Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>() {
+		//	
+		//	@Override
+		//	public void flatMap(String s, Collector<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> collector) throws Exception {
+		//		Gson gson = new Gson();
+		//		Map<String, String> map = new HashMap<String, String>();
+		//		Map<String, String> myMap = gson.fromJson(s, map.getClass());
 
-				Integer home_id = Integer.parseInt(myMap.get("home_id"));
-				Float latitude = Float.parseFloat(myMap.get("LAT"));
-				Float longitude = Float.parseFloat(myMap.get("LONG"));
-				Float usage = Float.parseFloat(myMap.get("usage"));
-				Float generation = Float.parseFloat(myMap.get("generation"));
-			    	String event_descr = "complex event";
-			   	String event_severity = event_class[index];
-            		    
-			    	Tuple8<Integer,Date,String,String,Float,Float,Float,Float> t_u_map = new Tuple8<>();
-				t_u_map.setFields(home_id, date, event_descr, event_severity, latitude, longitude, usage, generation);
-				
+		//	    	String[] event_class = {"Medium", "Low", "High", "Non-event"};
+		//	    	Random random = new Random();
+		//	    	int index = random.nextInt(event_class.length);
 
-				collector.collect(t_u_map);
-			}
-		});
+		//		DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+		//		Date date = format.parse(myMap.get("time"));
+
+		//		Integer home_id = Integer.parseInt(myMap.get("home_id"));
+		//		Float latitude = Float.parseFloat(myMap.get("LAT"));
+		//		Float longitude = Float.parseFloat(myMap.get("LONG"));
+		//		Float usage = Float.parseFloat(myMap.get("usage"));
+		//		Float generation = Float.parseFloat(myMap.get("generation"));
+		//	    	String event_descr = "complex event";
+		//	   	String event_severity = event_class[index];
+            	//	    
+		//	    	Tuple8<Integer,Date,String,String,Float,Float,Float,Float> t_u_map = new Tuple8();
+		//		t_u_map.setFields(home_id, date, event_descr, event_severity, latitude, longitude, usage, generation);
+		//		
+
+		//		collector.collect(t_u_map);
+		//	}
+		//});
 
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMapTimedValue = 
 			cepMap.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>() {
@@ -172,51 +237,30 @@ public class StreamingJob {
 				.where(new SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>() {
 					@Override
 					public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event1) throws Exception {
-						return event1.f6 > 8.0f;
-						//Float overLowThreshold = 0.6f * event1.f7;
-						//if (event1.f6 >= overLowThreshold)
-						//	return true;
-						//else
-						//	return false;
+						//return event1.f6 > 8.0f;
+						Float overLowThreshold = 0.6f * event1.f7;
+						if (event1.f6 >= overLowThreshold)
+							return true;
+						else
+							return false;
+					}
+				})
+				.followedBy("end")
+				.where(new SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>() {
+					@Override
+					public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event2) throws Exception {
+						Float overHighThreshold = 0.8f * event2.f7;
+						if (event2.f6 >= overHighThreshold)
+							return true;
+						else
+							return false;
 					}
 				});
-				//.followedBy("end")
-				//.where(new SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>() {
-				//	@Override
-				//	public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event2) throws Exception {
-				//		Float overHighThreshold = 0.8f * event2.f7;
-				//		if (event2.f6 >= overHighThreshold)
-				//			return true;
-				//		else
-				//			return false;
-				//	}
-				//});
 
 		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId, cep1);
 
 
-		DataStream<Tuple6<Integer, Date, String, String, Float, Float>> alerts = patternStream
-			.select(new PatternSelectFunction<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, Tuple6<Integer, Date, String, String, Float, Float>>() {
-
-
-			@Override
-			public Tuple6<Integer, Date, String, String, Float, Float> select(Map<String, List<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>> pattern) throws Exception {
-
-				Tuple8<Integer, Date, String, String, Float, Float, Float, Float>	endEvent = pattern.get("start").get(0);
-				Tuple6<Integer, Date, String, String, Float, Float> outEvent = new Tuple6<>();
-				
-				outEvent.setField(endEvent.getField(0), 0);
-				outEvent.setField(endEvent.getField(1), 1);
-				outEvent.setField(endEvent.getField(2), 2);
-				outEvent.setField(endEvent.getField(3), 3);
-				outEvent.setField(endEvent.getField(4), 4);
-				outEvent.setField(endEvent.getField(5), 5);
-
-				return outEvent;
-			}
-
-
-		});
+		DataStream<Tuple6<Integer, Date, String, String, Float, Float>> alerts = patternStream.select(new CaptureEvents());
 
 		//alerts.print();
 
