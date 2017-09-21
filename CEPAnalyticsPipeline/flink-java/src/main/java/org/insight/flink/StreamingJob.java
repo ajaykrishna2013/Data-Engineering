@@ -133,6 +133,29 @@ public class StreamingJob {
 	}
 
 
+	public static class OverLowThreshold extends SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> {
+		@Override
+		public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event1) throws Exception {
+			//return event1.f6 > 8.0f;
+			Float overLowThreshold = 0.6f * event1.f7;
+			if (event1.f6 >= overLowThreshold)
+				return true;
+			else
+				return false;
+		}
+	}
+
+	public static class OverHighThreshold extends SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> {
+		@Override
+		public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event2) throws Exception {
+			Float overHighThreshold = 0.8f * event2.f7;
+			if (event2.f6 >= overHighThreshold)
+				return true;
+			else
+				return false;
+		}
+	}
+
 
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
@@ -231,31 +254,36 @@ public class StreamingJob {
 
 		//cepMapByHomeId.print();
 
-
 		Pattern<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, ?> cep1 =
 				Pattern.<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>begin("start")
-				.where(new SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>() {
-					@Override
-					public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event1) throws Exception {
-						//return event1.f6 > 8.0f;
-						Float overLowThreshold = 0.6f * event1.f7;
-						if (event1.f6 >= overLowThreshold)
-							return true;
-						else
-							return false;
-					}
-				})
-				.followedBy("end")
-				.where(new SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>() {
-					@Override
-					public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event2) throws Exception {
-						Float overHighThreshold = 0.8f * event2.f7;
-						if (event2.f6 >= overHighThreshold)
-							return true;
-						else
-							return false;
-					}
-				});
+						.where(new OverLowThreshold())
+						.followedBy("end")
+						.where(new OverHighThreshold());
+
+		//Pattern<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, ?> cep1 =
+		//		Pattern.<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>begin("start")
+		//		.where(new SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>() {
+		//			@Override
+		//			public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event1) throws Exception {
+		//				//return event1.f6 > 8.0f;
+		//				Float overLowThreshold = 0.6f * event1.f7;
+		//				if (event1.f6 >= overLowThreshold)
+		//					return true;
+		//				else
+		//					return false;
+		//			}
+		//		})
+		//		.followedBy("end")
+		//		.where(new SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>() {
+		//			@Override
+		//			public boolean filter(Tuple8<Integer, Date, String, String, Float, Float, Float, Float> event2) throws Exception {
+		//				Float overHighThreshold = 0.8f * event2.f7;
+		//				if (event2.f6 >= overHighThreshold)
+		//					return true;
+		//				else
+		//					return false;
+		//			}
+		//		});
 
 		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId, cep1);
 
