@@ -48,8 +48,7 @@ import com.datastax.driver.core.Cluster.Builder;
 
 
 public class StreamingJob {
-	private static final String INSERT_SMART_HOME_USAGE_GENERATION = "INSERT INTO cep_analytics.smarthome_usage_gen_table (home_id, generation, usage, event_time) VALUES (?, ?, ?, ?)";
-	private static final String INSERT_CEP = "INSERT INTO cep_analytics.smarthome_cep_table (home_id, event_time, event_description, event_severity, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)";
+	private static final String INSERT_CEP = "INSERT INTO cep_analytics.smarthome_cep_table (home_id, event_start_time, event_end_time, event_description, event_severity, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
 
 	public static class OverLowThreshold extends SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> {
@@ -90,7 +89,7 @@ public class StreamingJob {
 
 		DataStream<String> stream = env.
 			addSource(new FlinkKafkaConsumer09<>( 
-				"SmartHomeMeterTopic", 
+				"SHMeterTopic", 
 				new SimpleStringSchema(), 
 				properties));
 
@@ -99,6 +98,7 @@ public class StreamingJob {
 			.flatMap(new UnpackEventStream());
 
 
+		//cepMap.print();
 
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMapTimedValue = 
 			cepMap.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>() {
@@ -121,10 +121,10 @@ public class StreamingJob {
 						.where(new OverHighThreshold());
 
 
-		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId, cep1);
+		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId.keyBy(0), cep1);
 
 
-		DataStream<Tuple6<Integer, Date, String, String, Float, Float>> alerts = patternStream.select(new PackageCapturedEvents());
+		DataStream<Tuple7<Integer, Date, Date, String, String, Float, Float>> alerts = patternStream.select(new PackageCapturedEvents());
 
 		//alerts.print();
 
