@@ -22,7 +22,11 @@ import java.util.Properties;
 import java.util.List;
 import java.util.Map;
 import java.util.Date;
-
+import com.google.gson.Gson;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.text.ParseException;
 //CEP modules
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.cep.CEP;
@@ -87,11 +91,37 @@ public class StreamingJob {
 		properties.setProperty("group.id", "flink_SmartHome_Consumer");
 
 
-		DataStream<String> stream = env.
-			addSource(new FlinkKafkaConsumer09<>( 
-				"SHMeterTopic", 
-				new SimpleStringSchema(), 
-				properties));
+		FlinkKafkaConsumer09<String> kafkaSource = new FlinkKafkaConsumer09<>("SHMeterTopic", new SimpleStringSchema(), properties);
+		kafkaSource.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<String>() {
+
+			@Override
+			public long extractAscendingTimestamp(String s) {
+				Gson gson = new Gson();
+				Map<String, String> map = new HashMap<String, String>();
+				Map<String, String> myMap = gson.fromJson(s, map.getClass());
+
+
+				DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSS");
+				try {
+					Date date = format.parse(myMap.get("time"));
+					return date.getTime();
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				return (long) 1.0;
+			}
+		});
+
+
+
+		DataStream<String> stream = env.addSource(kafkaSource);
+
+
+		//DataStream<String> stream = env.
+		//	addSource(new FlinkKafkaConsumer09<>( 
+		//		"SHMeterTopic", 
+		//		new SimpleStringSchema(), 
+		//		properties));
 
 		
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMap = stream
