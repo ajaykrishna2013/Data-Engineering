@@ -31,10 +31,10 @@
 
 <body>
         <header>
-                <h1>Complex Events Monitor</h1>
+                <h1>Cerberus</h1>
         </header>
 
-        <div id="MyMap" style="width:100%;height:500px;"></div>
+        <div id="MyMap" style="width:100%;height:530px;"></div>
         <script type="text/javascript">
                 var mymap = L.map('MyMap').setView([37.3861372,-121.9673456], 10);
                 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
@@ -48,7 +48,7 @@
                                 data: {},
                                 dataType: 'json',
                                 success: function(data) {
-                                    //console.log(data);
+                                    console.log(data);
 				    var arrayLength = data.length;
 				    for (var i = 0; i < arrayLength; i++) {
                                         var myLatLng = L.latLng(data[i]);
