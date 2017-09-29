@@ -12,15 +12,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class UnpackEventStream implements FlatMapFunction<String, Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> {
+public class UnpackEventStream implements 
+	FlatMapFunction<String, Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> {
 
     @Override
-    public void flatMap(String s, Collector<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> collector) throws Exception {
-        Gson gson = new Gson();
+    public void flatMap(String s, 
+	Collector<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> collector) 
+		throws Exception {
+        
+	Gson gson = new Gson();
         Map<String, String> map = new HashMap<String, String>();
         Map<String, String> myMap = gson.fromJson(s, map.getClass());
 
-        String[] event_class = {"Medium", "Low", "High", "Non-event"};
+        String[] event_class = {"Medium", "Low", "High"};
         Random random = new Random();
         int index = random.nextInt(event_class.length);
 
@@ -36,7 +40,8 @@ public class UnpackEventStream implements FlatMapFunction<String, Tuple8<Integer
         String event_severity = event_class[index];
 
         Tuple8<Integer,Date,String,String,Float,Float,Float,Float> t_u_map = new Tuple8<>();
-        t_u_map.setFields(home_id, date, event_descr, event_severity, latitude, longitude, usage, generation);
+        
+	t_u_map.setFields(home_id, date, event_descr, event_severity, latitude, longitude, usage, generation);
 
 
         collector.collect(t_u_map);
