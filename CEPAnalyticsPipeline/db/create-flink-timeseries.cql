@@ -14,19 +14,21 @@ Weather stations that correspond with collected raw weather data.
 
 CREATE TABLE smarthome_usage_gen_table (
     home_id int,
-    generation float,            // Name of reporting station
-    usage float,            // Name of reporting station
-    event_time timestamp,    // 2 letter ISO Country ID
-    PRIMARY KEY (home_id, event_time)
-)WITH CLUSTERING ORDER BY (event_time DESC);
+    generation float,           
+    usage float,            	 
+    event_start_time timestamp,    
+    event_end_time timestamp,    
+    PRIMARY KEY (home_id, event_start_time)
+)WITH CLUSTERING ORDER BY (event_start_time DESC);
 
 CREATE TABLE smarthome_cep_table (
     home_id int,
-    event_time timestamp,    
+    event_start_time timestamp,    
+    event_end_time timestamp,    
     event_description text,
     event_severity text,
     latitude float, 
     longitude float,
-    PRIMARY KEY (event_description, event_time)
-)WITH CLUSTERING ORDER BY (event_time DESC);
+    PRIMARY KEY (event_description, event_start_time)
+)WITH CLUSTERING ORDER BY (event_start_time DESC);
 

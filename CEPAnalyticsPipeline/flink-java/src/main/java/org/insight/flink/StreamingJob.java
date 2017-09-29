@@ -22,7 +22,11 @@ import java.util.Properties;
 import java.util.List;
 import java.util.Map;
 import java.util.Date;
-
+import com.google.gson.Gson;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.text.ParseException;
 //CEP modules
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.cep.CEP;
@@ -48,8 +52,7 @@ import com.datastax.driver.core.Cluster.Builder;
 
 
 public class StreamingJob {
-	private static final String INSERT_SMART_HOME_USAGE_GENERATION = "INSERT INTO cep_analytics.smarthome_usage_gen_table (home_id, generation, usage, event_time) VALUES (?, ?, ?, ?)";
-	private static final String INSERT_CEP = "INSERT INTO cep_analytics.smarthome_cep_table (home_id, event_time, event_description, event_severity, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)";
+	private static final String INSERT_CEP = "INSERT INTO cep_analytics.smarthome_cep_table (home_id, event_start_time, event_end_time, event_description, event_severity, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
 
 	public static class OverLowThreshold extends SimpleCondition<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> {
@@ -88,17 +91,44 @@ public class StreamingJob {
 		properties.setProperty("group.id", "flink_SmartHome_Consumer");
 
 
-		DataStream<String> stream = env.
-			addSource(new FlinkKafkaConsumer09<>( 
-				"SmartHomeMeterTopic", 
-				new SimpleStringSchema(), 
-				properties));
+		FlinkKafkaConsumer09<String> kafkaSource = new FlinkKafkaConsumer09<>("SHMeterTopic", new SimpleStringSchema(), properties);
+		kafkaSource.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<String>() {
+
+			@Override
+			public long extractAscendingTimestamp(String s) {
+				Gson gson = new Gson();
+				Map<String, String> map = new HashMap<String, String>();
+				Map<String, String> myMap = gson.fromJson(s, map.getClass());
+
+
+				DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSS");
+				try {
+					Date date = format.parse(myMap.get("time"));
+					return date.getTime();
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				return (long) 1.0;
+			}
+		});
+
+
+
+		DataStream<String> stream = env.addSource(kafkaSource);
+
+
+		//DataStream<String> stream = env.
+		//	addSource(new FlinkKafkaConsumer09<>( 
+		//		"SHMeterTopic", 
+		//		new SimpleStringSchema(), 
+		//		properties));
 
 		
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMap = stream
 			.flatMap(new UnpackEventStream());
 
 
+		//cepMap.print();
 
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>> cepMapTimedValue = 
 			cepMap.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>() {
@@ -121,10 +151,10 @@ public class StreamingJob {
 						.where(new OverHighThreshold());
 
 
-		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId, cep1);
+		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId.keyBy(0), cep1);
 
 
-		DataStream<Tuple6<Integer, Date, String, String, Float, Float>> alerts = patternStream.select(new PackageCapturedEvents());
+		DataStream<Tuple7<Integer, Date, Date, String, String, Float, Float>> alerts = patternStream.select(new PackageCapturedEvents());
 
 		//alerts.print();
 
