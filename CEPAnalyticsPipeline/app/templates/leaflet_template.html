@@ -12,7 +12,14 @@
 	<script type=text/javascript>
                 $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         </script>
+	<link rel="stylesheet" href="static/leaflet-vector-markers.css">
+	<script src="static/leaflet-vector-markers.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+			integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+			crossorigin="anonymous">
+	</script>
+
 
 </head>
 <style type="text/css">
@@ -58,12 +65,19 @@
                                 data: {},
                                 dataType: 'json',
                                 success: function(data) {
-                                    console.log(data['event_severity']);
-                                    console.log(data['event_start_time']);
+				    var rMarker = L.VectorMarkers.icon({ markerColor: 'red' });
+				    var yMarker = L.VectorMarkers.icon({ markerColor: 'yellow' });
+				    var gMarker = L.VectorMarkers.icon({ markerColor: 'green' });
 				    var arrayLength = data.length;
 				    for (var i = 0; i < arrayLength; i++) {
                                         var myLatLng = L.latLng(data[i]);
-					var marker = L.marker(myLatLng).addTo(mymap);
+					if (data[i]['event_severity'] == 'High') {
+						var marker = L.marker(myLatLng, {icon: rMarker}).addTo(mymap);
+					} else if (data[i]['event_severity'] == 'Medium') {
+						var marker = L.marker(myLatLng, {icon: yMarker}).addTo(mymap);
+					} else if (data[i]['event_severity'] == 'Low') {
+						var marker = L.marker(myLatLng, {icon: gMarker}).addTo(mymap);
+					}
 					marker.bindPopup("Event Priority:"+data[i]['event_severity']+"<br/>"+"Time:"+data[i]['event_start_time']).openPopup();
                                      }
 				},
