@@ -1,5 +1,5 @@
 from flask import Flask, session, request, g, redirect, jsonify
-from flask import url_for, abort, render_template, flash
+from flask import url_for, abort, render_template, flash, redirect
 from flask_googlemaps import GoogleMaps
 from flask_googlemaps import Map, icons
 import json
@@ -11,7 +11,11 @@ import time
 app = Flask('CEP_APP', template_folder="templates")
 cassandra = CassandraCluster()
 
-#app.config['CASSANDRA_NODES'] = ['10.0.0.10','10.0.0.12','10.0.0.14']  # can be a string or list of nodes
+
+with open('config_properties.json') as data_file:    
+    config = json.load(data_file)
+ 
+app.config['CASSANDRA_NODES'] = [config['Node1'], config['Node2'], config['Node3']]
 
 session = None
 
@@ -66,6 +70,16 @@ def querychart():
     severity_count['timestamp'] = int(time.time()) * 1000
     return jsonify(severity_count)
 
+@app.route('/demo_slides')
+def demo_slides():
+	return redirect(config['demo_slides'])
+
+@app.route('/github')
+def github():
+	return redirect(config['github'])
+
+
+
 def get_new_data(session):
     cql = "SELECT * FROM cep_analytics.smarthome_cep_table"
     r = session.execute(cql)
@@ -78,7 +92,6 @@ def get_chart_data(session, current_time):
     return r
 
 if __name__ == '__main__':
-    with open('config_properties.txt') as f:
-	config = f.readlines()
-    app.config['CASSANDRA_NODES'] = [config[0],config[1],config[2]]  # can be a string or list of nodes
-    app.run(host='ec2-50-112-18-158.us-west-2.compute.amazonaws.com')
+   #app.config['CASSANDRA_NODES'] = [config[0],config[1],config[2]]  # can be a string or list of nodes
+    #app.run(host='ec2-50-112-18-158.us-west-2.compute.amazonaws.com')
+    app.run(host='0.0.0.0')

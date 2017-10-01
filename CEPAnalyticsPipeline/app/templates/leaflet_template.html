@@ -36,10 +36,20 @@
 
         <div id="MyMap" style="width:100%;height:530px;"></div>
         <script type="text/javascript">
-                var mymap = L.map('MyMap').setView([37.3861372,-121.9673456], 10);
+                var mymap = L.map('MyMap').setView([37.3861372,-121.9673456], 7);
                 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(mymap);
+
+		function sleep(milliseconds) {
+  			var start = new Date().getTime();
+  			for (var i = 0; i < 1e7; i++) {
+  			  if ((new Date().getTime() - start) > milliseconds){
+  			    break;
+  			  }
+  			}
+		}
+
 
 		function putMarkers()  {
                         $.ajax({
@@ -48,23 +58,26 @@
                                 data: {},
                                 dataType: 'json',
                                 success: function(data) {
-                                    console.log(data);
+                                    console.log(data['event_severity']);
+                                    console.log(data['event_start_time']);
 				    var arrayLength = data.length;
 				    for (var i = 0; i < arrayLength; i++) {
                                         var myLatLng = L.latLng(data[i]);
 					var marker = L.marker(myLatLng).addTo(mymap);
-                                        }
-                                },
+					marker.bindPopup("Event Priority:"+data[i]['event_severity']+"<br/>"+"Time:"+data[i]['event_start_time']).openPopup();
+                                     }
+				},
                                 error: function() { 
                                     console.log("cannot get json ...boo hoo");
                                 }
                         });     
                 }
 		
-		setInterval(putMarkers, 6000);
+		setInterval(putMarkers, 10000);
+
 
         </script>
-        <footer>Ajay Sreehari, Data Engineering Fellow, Insight</footer>
+	<footer>Ajay Sreehari, Data Engineering Fellow, Insight</footer>
 
 </body>
 </html>
