@@ -9,10 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 public class PackageCapturedEvents implements
-        PatternSelectFunction<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, Tuple7<Integer, Date, Date, String, String, Float, Float>> {
+        PatternSelectFunction<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, 
+		Tuple7<Integer, Date, Date, String, String, Float, Float>> {
     @Override
-    public Tuple7<Integer, Date, Date, String, String, Float, Float> select(Map<String, List<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>> pattern)
-            throws Exception {
+    public Tuple7<Integer, Date, Date, String, String, Float, Float> 
+		select(Map<String, List<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>>> pattern)
+            		throws Exception {
 
         Tuple8<Integer, Date, String, String, Float, Float, Float, Float>	startEvent = pattern.get("start").get(0);
         Tuple8<Integer, Date, String, String, Float, Float, Float, Float>	endEvent = pattern.get("end").get(0);
