@@ -14,18 +14,11 @@ A CEP engine is a platform for building and running applications used to process
 
 ## Processing:
 - Simple Patterns
--- Has the average energy generation fallen below a Threshold
+  - Has the average energy generation fallen below a Threshold
 - Iterative Patterns
--- Specify a condition that accepts subsequent events based on properties of the previously accepted events
+  - Specify a condition that accepts subsequent events based on properties of the previously accepted events
 - Looping Patterns
--- Has that happened multiple times within the last 30 seconds
-
-## Challenges:
-- Understanding the semantics of Stream processing
-- Event Time vs Processing Time.  
-- Watermark Generation
-- Event detection on a Stream of Data
--- Sessions instead of Windowing
+  - Has that happened multiple times within the last 30 seconds
 
 ## Pipeline
 
