@@ -34,4 +34,4 @@ A CEP engine is a platform for building and running applications used to process
 - 3 Node Kafka
 - 3 Node Flink
 - 3 Node Cassandra
-
+![Alt text] https://github.com/ajaykrishna2013/Data-Engineering/blob/master/CEPAnalyticsPipeline/app/templates/Pipeline.png
