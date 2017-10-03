@@ -23,9 +23,21 @@
 
 </head>
 <style type="text/css">
+	body, html {
+  		height: 100%;
+  		margin: 0;
+  		padding: 0;
+	}
+	.wrapper {
+  		display: flex;
+  		height: 100%;
+  		flex-direction: column;
+  		-ms-flex-direction: column;
+  		background: red;
+	}
+
         header, footer {
                 padding : 2px 15px 15px 2px;
-
                 color: white;
                 background-color: black;
                 clear: left;
@@ -37,61 +49,60 @@
 </style>
 
 <body>
-        <header>
-                <h1>Cerberus</h1>
-        </header>
+	<div class="wrapper">
+        	<header>
+        	        <h1>Cerberus</h1>
+        	</header>
 
-        <div id="MyMap" style="width:100%;height:530px;"></div>
-        <script type="text/javascript">
-                var mymap = L.map('MyMap').setView([37.3861372,-121.9673456], 7);
-                L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(mymap);
+        	<div id="MyMap" style="width:100%;height:100%;"></div>
+        	<script type="text/javascript">
+        	        var mymap = L.map('MyMap').setView([37.3861372,-121.9673456], 7);
+        	        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        	        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        	        }).addTo(mymap);
 
-		function sleep(milliseconds) {
-  			var start = new Date().getTime();
-  			for (var i = 0; i < 1e7; i++) {
-  			  if ((new Date().getTime() - start) > milliseconds){
-  			    break;
-  			  }
-  			}
-		}
-
-
-		function putMarkers()  {
-                        $.ajax({
-                                type: 'GET',
-                                url: $SCRIPT_ROOT + '/livemapjson',
-                                data: {},
-                                dataType: 'json',
-                                success: function(data) {
-				    var rMarker = L.VectorMarkers.icon({ markerColor: 'red' });
-				    var yMarker = L.VectorMarkers.icon({ markerColor: 'yellow' });
-				    var gMarker = L.VectorMarkers.icon({ markerColor: 'green' });
-				    var arrayLength = data.length;
-				    for (var i = 0; i < arrayLength; i++) {
-                                        var myLatLng = L.latLng(data[i]);
-					if (data[i]['event_severity'] == 'High') {
-						var marker = L.marker(myLatLng, {icon: rMarker}).addTo(mymap);
-					} else if (data[i]['event_severity'] == 'Medium') {
-						var marker = L.marker(myLatLng, {icon: yMarker}).addTo(mymap);
-					} else if (data[i]['event_severity'] == 'Low') {
-						var marker = L.marker(myLatLng, {icon: gMarker}).addTo(mymap);
-					}
-					marker.bindPopup("Event Priority:"+data[i]['event_severity']+"<br/>"+"Time:"+data[i]['event_start_time']).openPopup();
-                                     }
-				},
-                                error: function() { 
-                                    console.log("cannot get json ...boo hoo");
-                                }
-                        });     
-                }
-		
-		setInterval(putMarkers, 10000);
+			function sleep(milliseconds) {
+  				var start = new Date().getTime();
+  				for (var i = 0; i < 1e7; i++) {
+  				  if ((new Date().getTime() - start) > milliseconds){
+  				    break;
+  				  }
+  				}
+			}
 
 
-        </script>
-	<footer>Ajay Sreehari, Data Engineering Fellow, Insight</footer>
-
+			function putMarkers()  {
+        	                $.ajax({
+        	                        type: 'GET',
+        	                        url: $SCRIPT_ROOT + '/livemapjson',
+        	                        data: {},
+        	                        dataType: 'json',
+        	                        success: function(data) {
+					    var rMarker = L.VectorMarkers.icon({ markerColor: 'red' });
+					    var yMarker = L.VectorMarkers.icon({ markerColor: 'yellow' });
+					    var gMarker = L.VectorMarkers.icon({ markerColor: 'green' });
+					    var arrayLength = data.length;
+					    for (var i = 0; i < arrayLength; i++) {
+        	                                var myLatLng = L.latLng(data[i]);
+						if (data[i]['event_severity'] == 'High') {
+							var marker = L.marker(myLatLng, {icon: rMarker}).addTo(mymap);
+						} else if (data[i]['event_severity'] == 'Medium') {
+							var marker = L.marker(myLatLng, {icon: yMarker}).addTo(mymap);
+						} else if (data[i]['event_severity'] == 'Low') {
+							var marker = L.marker(myLatLng, {icon: gMarker}).addTo(mymap);
+						}
+						marker.bindPopup("Event Priority:"+data[i]['event_severity']+"<br/>"+"Time:"+data[i]['event_start_time']).openPopup();
+        	                             }
+					},
+        	                        error: function() { 
+        	                            console.log("cannot get json ...boo hoo");
+        	                        }
+        	                });     
+        	        }
+			
+			setInterval(putMarkers, 10000);
+        	</script>
+        	<footer> Ajay Sreehari, Insight Data Engineering </footer>
+	</div>
 </body>
 </html>
