@@ -92,6 +92,4 @@ def get_chart_data(session, current_time):
     return r
 
 if __name__ == '__main__':
-   #app.config['CASSANDRA_NODES'] = [config[0],config[1],config[2]]  # can be a string or list of nodes
-    #app.run(host='ec2-50-112-18-158.us-west-2.compute.amazonaws.com')
     app.run(host='0.0.0.0')
