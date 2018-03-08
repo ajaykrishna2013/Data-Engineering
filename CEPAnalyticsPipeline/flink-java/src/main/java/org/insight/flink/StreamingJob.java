@@ -109,6 +109,7 @@ public class StreamingJob {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(4);
+		env.enableCheckpointing(5000);
 		
 		//retrieve configuration
 		Properties cfg = getConfig("config.properties");
@@ -158,14 +159,15 @@ public class StreamingJob {
 
 		DataStream<Tuple8<Integer,Date,String,String,Float,Float,Float, Float>> cepMapByHomeId = cepMap.keyBy(0);
 
-		//cepMapByHomeId.print();
+		cepMapByHomeId.print();
 
 		//Define Chained Pattern
 		Pattern<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>, ?> detectThresholdPattern =
 				Pattern.<Tuple8<Integer,Date,String,String,Float,Float,Float,Float>>begin("start")
 						.where(new OverLowThreshold())
 						.followedBy("end")
-						.where(new OverHighThreshold());
+						.where(new OverHighThreshold())
+						.within(Time.seconds(30));
 
 		//Apply pattern
 		PatternStream<Tuple8<Integer, Date, String, String, Float, Float, Float, Float>> patternStream = CEP.pattern(cepMapByHomeId, detectThresholdPattern);
@@ -173,7 +175,7 @@ public class StreamingJob {
 
 		DataStream<Tuple7<Integer, Date, Date, String, String, Float, Float>> alerts = patternStream.select(new PackageCapturedEvents());
 
-		//alerts.print();
+		alerts.print();
 
 		//Send to Cassandra
 		CassandraSink.addSink(alerts)
